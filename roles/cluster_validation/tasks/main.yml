@@ -15,4 +15,3 @@
 - name: Print cluster nodes
   ansible.builtin.debug:
     var: cluster_nodes.stdout_lines
-
