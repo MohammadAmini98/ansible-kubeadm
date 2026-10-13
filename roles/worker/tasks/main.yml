@@ -17,4 +17,5 @@
   ansible.builtin.command:
     cmd: "{{ kubeadm_join.stdout }} --cri-socket {{ kubernetes_cri_socket }}"
   when: not kubelet_config.stat.exists
+  changed_when: true
   no_log: true

@@ -34,6 +34,7 @@
   ansible.builtin.command:
     cmd: "kubeadm init --config {{ kube_config_dir }}/kubeadm-config.yaml"
   when: not kubeadm_initialized.stat.exists
+  changed_when: true
 
 - name: Record successful control-plane initialization
   ansible.builtin.file:

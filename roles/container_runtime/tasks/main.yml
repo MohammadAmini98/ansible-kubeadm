@@ -66,6 +66,7 @@
     cmd: >-
       dpkg --unpack {{ artifact_remote_dir }}/runtime-packages/*.deb &&
       dpkg --configure --pending
+  changed_when: true
   when:
     - use_cached_artifacts | bool
     - containerd_cached_version.rc != 0

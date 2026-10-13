@@ -48,9 +48,4 @@
       {% for name, value in kubernetes_sysctls.items() %}
       {{ name }} = {{ value }}
       {% endfor %}
-  register: kubernetes_sysctl
-
-- name: Reload sysctls
-  ansible.builtin.command: sysctl --system
-  when: kubernetes_sysctl.changed
-  changed_when: true
+  notify: Reload Kubernetes sysctls

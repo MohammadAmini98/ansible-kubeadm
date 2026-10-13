@@ -3,6 +3,9 @@ extends: default
 ignore: |
   .ansible/
   ansible-redis-sentinel-ha/
+  roles/calico/files/
+  roles/container_runtime/files/
+  roles/kubernetes_packages/files/
 rules:
   braces:
     max-spaces-inside: 1

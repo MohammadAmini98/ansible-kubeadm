@@ -68,6 +68,7 @@
           dpkg --unpack {{ artifact_remote_dir }}/packages/*.deb &&
           dpkg --configure --pending
       when: kubernetes_cached_versions.rc != 0
+      changed_when: true
       environment:
         DEBIAN_FRONTEND: noninteractive
 
