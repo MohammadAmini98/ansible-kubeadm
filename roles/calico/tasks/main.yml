@@ -1,0 +1,35 @@
+---
+- name: Copy cached Calico manifest
+  ansible.builtin.copy:
+    src: calico.yaml
+    dest: "{{ kube_config_dir }}/calico.yaml"
+    mode: "0644"
+  when: use_cached_artifacts | bool
+
+- name: Download Calico manifest
+  ansible.builtin.get_url:
+    url: "{{ calico_manifest_url }}"
+    dest: "{{ kube_config_dir }}/calico.yaml"
+    mode: "0644"
+  when: not use_cached_artifacts | bool
+
+- name: Install Calico networking
+  kube:
+    kubectl: "{{ bin_dir }}/kubectl"
+    kubeconfig: "{{ kube_config_dir }}/admin.conf"
+    filename: "{{ kube_config_dir }}/calico.yaml"
+    state: latest
+
+- name: Wait for Calico node agents
+  ansible.builtin.command:
+    cmd: >-
+      {{ kubectl }} rollout status daemonset/calico-node
+      --namespace kube-system --timeout={{ calico_rollout_timeout }}
+  changed_when: false
+
+- name: Wait for Calico controllers
+  ansible.builtin.command:
+    cmd: >-
+      {{ kubectl }} rollout status deployment/calico-kube-controllers
+      --namespace kube-system --timeout={{ calico_rollout_timeout }}
+  changed_when: false

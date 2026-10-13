@@ -1,0 +1,51 @@
+---
+- name: Prepare all Kubernetes nodes
+  hosts: kubernetes_cluster
+  gather_facts: true
+  any_errors_fatal: true
+  roles:
+    - role: node_preparation
+      tags: [preparation]
+      when: kubernetes_node_preparation_enabled | default(true) | bool
+    - role: container_runtime
+      tags: [container_runtime, runtime]
+      when: container_runtime_enabled | default(true) | bool
+    - role: kubernetes_packages
+      tags: [kubernetes_packages, packages]
+      when: kubernetes_packages_enabled | default(true) | bool
+
+- name: Initialize the control plane
+  hosts: control_plane
+  serial: 1
+  any_errors_fatal: true
+  roles:
+    - role: control_plane
+      tags: [control_plane]
+      when: kubernetes_control_plane_enabled | default(true) | bool
+
+- name: Join worker nodes
+  hosts: workers
+  serial: 1
+  any_errors_fatal: true
+  roles:
+    - role: worker
+      tags: [workers]
+      when: kubernetes_workers_enabled | default(true) | bool
+
+- name: Install Calico after all nodes have joined
+  hosts: control_plane
+  gather_facts: false
+  roles:
+    - role: calico
+      tags: [calico, networking]
+      when: calico_enabled | default(true) | bool
+
+- name: Verify cluster health
+  hosts: control_plane
+  gather_facts: false
+  roles:
+    - role: cluster_validation
+      tags: [verify]
+      when:
+        - not ansible_check_mode
+        - kubernetes_validation_enabled | default(true) | bool

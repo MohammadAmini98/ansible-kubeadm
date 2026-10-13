@@ -1,0 +1,11 @@
+---
+kubernetes_control_plane_enabled: true
+kube_config_dir: /etc/kubernetes
+kubernetes_admin_user: "{{ ansible_user }}"
+kubernetes_cri_socket: unix:///run/containerd/containerd.sock
+kubernetes_image_repository: registry.k8s.io
+pod_network_cidr: 192.168.0.0/16
+service_network_cidr: 10.96.0.0/12
+control_plane_endpoint: >-
+  {{ hostvars[groups['control_plane'][0]].ansible_host |
+     default(groups['control_plane'][0]) }}:6443

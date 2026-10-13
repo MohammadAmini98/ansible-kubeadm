@@ -1,0 +1,62 @@
+---
+# -----------------------------------------------------------------------------
+# Ansible connection
+# -----------------------------------------------------------------------------
+ansible_user: ubuntu
+ansible_ssh_private_key_file: /home/mohammad/.ssh/id_rsa
+ansible_become: true
+
+# -----------------------------------------------------------------------------
+# Component switches
+# -----------------------------------------------------------------------------
+kubernetes_node_preparation_enabled: true
+container_runtime_enabled: true
+kubernetes_packages_enabled: true
+kubernetes_control_plane_enabled: true
+kubernetes_workers_enabled: true
+calico_enabled: true
+kubernetes_validation_enabled: true
+
+# -----------------------------------------------------------------------------
+# Cached/offline artifacts
+# Run ./download-artifacts.sh before enabling this option.
+# -----------------------------------------------------------------------------
+use_cached_artifacts: false
+artifact_remote_dir: /var/cache/kubernetes-artifacts
+
+# -----------------------------------------------------------------------------
+# Kubernetes packages and images
+# -----------------------------------------------------------------------------
+kubernetes_minor_version: "1.37"
+kubernetes_package_version: ""
+kubernetes_image_repository: registry.aliyuncs.com/google_containers
+kubernetes_pause_image_tag: "3.10.2"
+kubernetes_pause_image: >-
+  {{ kubernetes_image_repository }}/pause:{{ kubernetes_pause_image_tag }}
+
+# -----------------------------------------------------------------------------
+# Kubernetes paths and networking
+# -----------------------------------------------------------------------------
+bin_dir: /usr/bin
+kube_config_dir: /etc/kubernetes
+kubectl: >-
+  {{ bin_dir }}/kubectl --kubeconfig {{ kube_config_dir }}/admin.conf
+kubernetes_cri_socket: unix:///run/containerd/containerd.sock
+pod_network_cidr: 192.168.0.0/16
+service_network_cidr: 10.96.0.0/12
+control_plane_endpoint: >-
+  {{ hostvars[groups['control_plane'][0]].ansible_host |
+     default(groups['control_plane'][0]) }}:6443
+kubernetes_admin_user: "{{ ansible_user }}"
+
+# -----------------------------------------------------------------------------
+# Calico
+# -----------------------------------------------------------------------------
+calico_version: v3.33.0
+calico_manifest_url: "https://raw.githubusercontent.com/projectcalico/calico/{{ calico_version }}/manifests/calico.yaml"
+calico_rollout_timeout: 300s
+
+# -----------------------------------------------------------------------------
+# Cluster validation
+# -----------------------------------------------------------------------------
+kubernetes_node_ready_timeout: 300s

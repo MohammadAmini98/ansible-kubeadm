@@ -1,0 +1,71 @@
+---
+- name: Ensure exactly one control-plane host is configured
+  ansible.builtin.assert:
+    that:
+      - groups['control_plane'] | length == 1
+    fail_msg: "This project requires exactly one host in the control_plane group."
+
+- name: Write kubeadm configuration
+  ansible.builtin.template:
+    src: kubeadm-config.yaml.j2
+    dest: "{{ kube_config_dir }}/kubeadm-config.yaml"
+    mode: "0600"
+
+- name: Check control-plane initialization marker
+  ansible.builtin.stat:
+    path: "{{ kube_config_dir }}/.kubeadm_initialized"
+  register: kubeadm_initialized
+
+- name: Check for partial kubeadm initialization
+  ansible.builtin.stat:
+    path: "{{ kube_config_dir }}/admin.conf"
+  register: kubeadm_admin_conf
+
+- name: Stop when a previous kubeadm initialization is incomplete
+  ansible.builtin.assert:
+    that:
+      - not kubeadm_admin_conf.stat.exists or kubeadm_initialized.stat.exists
+    fail_msg: >-
+      A previous kubeadm init stopped after writing admin.conf but before
+      completing. Diagnose the kubelet/static pods, then run kubeadm reset
+      before retrying this playbook.
+
+- name: Initialize Kubernetes control plane
+  ansible.builtin.command:
+    cmd: "kubeadm init --config {{ kube_config_dir }}/kubeadm-config.yaml"
+  when: not kubeadm_initialized.stat.exists
+
+- name: Record successful control-plane initialization
+  ansible.builtin.file:
+    path: "{{ kube_config_dir }}/.kubeadm_initialized"
+    state: touch
+    mode: "0600"
+    modification_time: preserve
+    access_time: preserve
+  when: not kubeadm_initialized.stat.exists
+
+- name: Look up Kubernetes admin user
+  ansible.builtin.getent:
+    database: passwd
+    key: "{{ kubernetes_admin_user }}"
+
+- name: Set Kubernetes admin home
+  ansible.builtin.set_fact:
+    kubernetes_admin_home: "{{ ansible_facts.getent_passwd[kubernetes_admin_user][4] }}"
+
+- name: Create user kubeconfig directory
+  ansible.builtin.file:
+    path: "{{ kubernetes_admin_home }}/.kube"
+    state: directory
+    owner: "{{ kubernetes_admin_user }}"
+    group: "{{ kubernetes_admin_user }}"
+    mode: "0700"
+
+- name: Copy admin kubeconfig to user home
+  ansible.builtin.copy:
+    src: "{{ kube_config_dir }}/admin.conf"
+    dest: "{{ kubernetes_admin_home }}/.kube/config"
+    remote_src: true
+    owner: "{{ kubernetes_admin_user }}"
+    group: "{{ kubernetes_admin_user }}"
+    mode: "0600"

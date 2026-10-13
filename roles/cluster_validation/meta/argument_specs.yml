@@ -1,0 +1,9 @@
+---
+argument_specs:
+  main:
+    short_description: Verify Kubernetes cluster health
+    options:
+      kubernetes_validation_enabled: {type: bool, required: true}
+      kubernetes_node_ready_timeout: {type: str, required: true}
+      bin_dir: {type: path, required: true}
+      kube_config_dir: {type: path, required: true}

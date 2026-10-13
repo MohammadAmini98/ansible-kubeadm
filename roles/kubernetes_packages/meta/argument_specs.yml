@@ -1,0 +1,11 @@
+---
+argument_specs:
+  main:
+    short_description: Install kubelet, kubeadm, and kubectl
+    options:
+      kubernetes_packages_enabled: {type: bool, required: true}
+      kubernetes_minor_version: {type: str, required: true}
+      kubernetes_package_version: {type: str}
+      kubernetes_package_names: {type: list, elements: str}
+      use_cached_artifacts: {type: bool, required: true}
+      artifact_remote_dir: {type: path, required: true}

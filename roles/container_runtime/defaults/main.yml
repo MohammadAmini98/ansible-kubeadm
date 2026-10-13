@@ -1,0 +1,13 @@
+---
+container_runtime_enabled: true
+container_runtime_package: containerd
+container_runtime_service: containerd
+container_runtime_config_dir: /etc/containerd
+container_runtime_config_file: /etc/containerd/config.toml
+container_runtime_namespace: k8s.io
+use_cached_artifacts: false
+artifact_remote_dir: /var/cache/kubernetes-artifacts
+kubernetes_image_repository: registry.k8s.io
+kubernetes_pause_image_tag: "3.10.2"
+kubernetes_pause_image: >-
+  {{ kubernetes_image_repository }}/pause:{{ kubernetes_pause_image_tag }}

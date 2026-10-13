@@ -1,0 +1,12 @@
+---
+argument_specs:
+  main:
+    short_description: Deploy and verify Calico networking
+    options:
+      calico_enabled: {type: bool, required: true}
+      calico_version: {type: str, required: true}
+      calico_manifest_url: {type: str, required: true}
+      calico_rollout_timeout: {type: str, required: true}
+      use_cached_artifacts: {type: bool, required: true}
+      bin_dir: {type: path, required: true}
+      kube_config_dir: {type: path, required: true}

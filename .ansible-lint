@@ -1,0 +1,9 @@
+---
+profile: production
+# Roles share a deliberate project-wide Kubernetes variable interface.
+skip_list:
+  - var-naming[no-role-prefix]
+exclude_paths:
+  - .cache/
+  - .ansible/
+  - ansible-redis-sentinel-ha/

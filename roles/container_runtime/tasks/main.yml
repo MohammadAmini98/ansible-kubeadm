@@ -1,0 +1,169 @@
+---
+- name: Find cached runtime packages on the controller
+  ansible.builtin.set_fact:
+    containerd_cached_packages: >-
+      {{ lookup('ansible.builtin.fileglob', role_path + '/files/packages/*.deb', wantlist=True) }}
+  when: use_cached_artifacts | bool
+
+- name: Verify cached runtime packages exist
+  ansible.builtin.assert:
+    that:
+      - containerd_cached_packages | length > 0
+    fail_msg: "No cached runtime packages were found. Run ./download-artifacts.sh first."
+  when: use_cached_artifacts | bool
+
+- name: Create remote runtime package cache
+  ansible.builtin.file:
+    path: "{{ artifact_remote_dir }}/runtime-packages"
+    state: directory
+    mode: "0755"
+  when: use_cached_artifacts | bool
+
+- name: Find existing remote runtime packages
+  ansible.builtin.find:
+    paths: "{{ artifact_remote_dir }}/runtime-packages"
+    patterns: "*.deb"
+    file_type: file
+  register: remote_runtime_packages
+  when: use_cached_artifacts | bool
+
+- name: Remove stale remote runtime packages
+  ansible.builtin.file:
+    path: "{{ item.path }}"
+    state: absent
+  loop: "{{ remote_runtime_packages.files | default([]) }}"
+  loop_control:
+    label: "{{ item.path | basename }}"
+  when:
+    - use_cached_artifacts | bool
+    - item.path | basename not in (containerd_cached_packages | map('basename') | list)
+
+- name: Copy cached runtime packages
+  ansible.builtin.copy:
+    src: "{{ item }}"
+    dest: "{{ artifact_remote_dir }}/runtime-packages/{{ item | basename }}"
+    mode: "0644"
+  loop: "{{ containerd_cached_packages }}"
+  loop_control:
+    label: "{{ item | basename }}"
+  when: use_cached_artifacts | bool
+
+- name: Check cached containerd version
+  ansible.builtin.shell:
+    cmd: >-
+      archive=$(find {{ artifact_remote_dir }}/runtime-packages
+      -maxdepth 1 -name 'containerd_*.deb' -print -quit) &&
+      test -n "$archive" &&
+      test "$(dpkg-query --show --showformat='${Version}' containerd 2>/dev/null)"
+      = "$(dpkg-deb --field "$archive" Version)"
+  register: containerd_cached_version
+  changed_when: false
+  failed_when: false
+  when: use_cached_artifacts | bool
+
+- name: Install cached runtime packages
+  ansible.builtin.shell:
+    cmd: >-
+      dpkg --unpack {{ artifact_remote_dir }}/runtime-packages/*.deb &&
+      dpkg --configure --pending
+  when:
+    - use_cached_artifacts | bool
+    - containerd_cached_version.rc != 0
+  environment:
+    DEBIAN_FRONTEND: noninteractive
+
+- name: Install containerd
+  ansible.builtin.apt:
+    name: "{{ container_runtime_package }}"
+    state: present
+    update_cache: true
+  when: not use_cached_artifacts | bool
+
+- name: Ensure containerd configuration directory exists
+  ansible.builtin.file:
+    path: "{{ container_runtime_config_dir }}"
+    state: directory
+    mode: "0755"
+
+- name: Read default containerd configuration
+  ansible.builtin.command: containerd config default
+  register: containerd_default_config
+  changed_when: false
+
+- name: Configure containerd to use systemd cgroups
+  ansible.builtin.copy:
+    dest: "{{ container_runtime_config_file }}"
+    mode: "0644"
+    content: >-
+      {{ containerd_default_config.stdout
+         | regex_replace('SystemdCgroup = false', 'SystemdCgroup = true')
+         | regex_replace('(?m)^\s*sandbox_image\s*=.*$',
+             'sandbox_image = ' ~ (kubernetes_pause_image | to_json))
+         | regex_replace('(?m)^\s*sandbox\s*=.*$',
+             'sandbox = ' ~ (kubernetes_pause_image | to_json)) }}
+  notify: Restart containerd
+
+- name: Ensure containerd is enabled and started
+  ansible.builtin.service:
+    name: "{{ container_runtime_service }}"
+    enabled: true
+    state: started
+
+- name: Apply containerd configuration before continuing
+  ansible.builtin.meta: flush_handlers
+
+- name: Create remote image cache
+  ansible.builtin.file:
+    path: "{{ artifact_remote_dir }}/images"
+    state: directory
+    mode: "0755"
+  when: use_cached_artifacts | bool
+
+- name: Copy cached Kubernetes and Calico images
+  ansible.builtin.copy:
+    src: "images/"
+    dest: "{{ artifact_remote_dir }}/images/"
+    mode: "0644"
+  when: use_cached_artifacts | bool
+
+- name: Find copied image archives
+  ansible.builtin.find:
+    paths: "{{ artifact_remote_dir }}/images"
+    patterns: "*.tar"
+    file_type: file
+  register: cached_image_archives
+  when: use_cached_artifacts | bool
+
+- name: Verify cached image archives exist
+  ansible.builtin.assert:
+    that:
+      - cached_image_archives.matched | int > 0
+    fail_msg: "No cached image archives were found. Run ./download-artifacts.sh first."
+  when: use_cached_artifacts | bool
+
+- name: Import cached Kubernetes and Calico images
+  ansible.builtin.command:
+    argv:
+      - ctr
+      - --namespace
+      - "{{ container_runtime_namespace }}"
+      - images
+      - import
+      - "{{ item.path }}"
+  loop: "{{ cached_image_archives.files | default([]) }}"
+  changed_when: false
+  when: use_cached_artifacts | bool
+
+- name: Read effective containerd configuration
+  ansible.builtin.command: containerd config dump
+  register: containerd_effective_config
+  changed_when: false
+
+- name: Verify containerd uses the configured sandbox image
+  ansible.builtin.assert:
+    that:
+      - >-
+        kubernetes_pause_image in containerd_effective_config.stdout
+    fail_msg: >-
+      containerd did not load the configured Kubernetes sandbox image.
+      Check {{ container_runtime_config_file }} before running kubeadm.

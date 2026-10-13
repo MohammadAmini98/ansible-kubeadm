@@ -1,0 +1,8 @@
+---
+argument_specs:
+  main:
+    short_description: Join Kubernetes worker nodes
+    options:
+      kubernetes_workers_enabled: {type: bool, required: true}
+      kube_config_dir: {type: path, required: true}
+      kubernetes_cri_socket: {type: str, required: true}

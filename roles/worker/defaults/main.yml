@@ -1,0 +1,4 @@
+---
+kubernetes_workers_enabled: true
+kube_config_dir: /etc/kubernetes
+kubernetes_cri_socket: unix:///run/containerd/containerd.sock

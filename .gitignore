@@ -1,0 +1,13 @@
+*.retry
+.cache/
+.ansible/
+.agents/
+.aws/
+.codex/
+ansible-redis-sentinel-ha/
+
+# Generated offline artifacts. Rebuild with ./download-artifacts.sh.
+roles/container_runtime/files/packages/
+roles/container_runtime/files/images/
+roles/kubernetes_packages/files/packages/
+roles/calico/files/calico.yaml

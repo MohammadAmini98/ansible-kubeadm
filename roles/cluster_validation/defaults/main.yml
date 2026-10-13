@@ -1,0 +1,7 @@
+---
+kubernetes_validation_enabled: true
+kubernetes_node_ready_timeout: 300s
+bin_dir: /usr/bin
+kube_config_dir: /etc/kubernetes
+kubectl: >-
+  {{ bin_dir }}/kubectl --kubeconfig {{ kube_config_dir }}/admin.conf

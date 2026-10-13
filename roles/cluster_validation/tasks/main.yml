@@ -1,0 +1,18 @@
+---
+- name: Wait for every node to become Ready
+  ansible.builtin.command:
+    cmd: >-
+      {{ kubectl }} wait --for=condition=Ready nodes --all
+      --timeout={{ kubernetes_node_ready_timeout }}
+  changed_when: false
+
+- name: Show cluster nodes
+  ansible.builtin.command:
+    cmd: "{{ kubectl }} get nodes -o wide"
+  register: cluster_nodes
+  changed_when: false
+
+- name: Print cluster nodes
+  ansible.builtin.debug:
+    var: cluster_nodes.stdout_lines
+

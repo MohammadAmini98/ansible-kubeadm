@@ -1,0 +1,9 @@
+---
+argument_specs:
+  main:
+    short_description: Prepare Linux hosts for Kubernetes
+    options:
+      kubernetes_node_preparation_enabled: {type: bool, required: true}
+      kubernetes_supported_os_families: {type: list, elements: str}
+      kubernetes_kernel_modules: {type: list, elements: str}
+      kubernetes_sysctls: {type: dict}

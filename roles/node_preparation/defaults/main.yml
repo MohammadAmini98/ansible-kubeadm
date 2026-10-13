@@ -1,0 +1,11 @@
+---
+kubernetes_node_preparation_enabled: true
+kubernetes_supported_os_families:
+  - Debian
+kubernetes_kernel_modules:
+  - overlay
+  - br_netfilter
+kubernetes_sysctls:
+  net.bridge.bridge-nf-call-iptables: 1
+  net.bridge.bridge-nf-call-ip6tables: 1
+  net.ipv4.ip_forward: 1

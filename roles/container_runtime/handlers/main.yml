@@ -1,0 +1,6 @@
+---
+- name: Restart containerd
+  ansible.builtin.service:
+    name: "{{ container_runtime_service }}"
+    state: restarted
+

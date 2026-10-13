@@ -1,0 +1,14 @@
+---
+argument_specs:
+  main:
+    short_description: Install and configure containerd for Kubernetes
+    options:
+      container_runtime_enabled: {type: bool, required: true}
+      container_runtime_package: {type: str, required: true}
+      container_runtime_service: {type: str, required: true}
+      container_runtime_config_dir: {type: path, required: true}
+      container_runtime_config_file: {type: path, required: true}
+      container_runtime_namespace: {type: str, required: true}
+      use_cached_artifacts: {type: bool, required: true}
+      artifact_remote_dir: {type: path, required: true}
+      kubernetes_pause_image: {type: str, required: true}

@@ -1,0 +1,10 @@
+---
+kubernetes_packages_enabled: true
+kubernetes_minor_version: "1.37"
+kubernetes_package_version: ""
+kubernetes_package_names:
+  - kubelet
+  - kubeadm
+  - kubectl
+use_cached_artifacts: false
+artifact_remote_dir: /var/cache/kubernetes-artifacts
